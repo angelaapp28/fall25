@@ -37,9 +37,13 @@ Image32 Image32::addRandomNoise( double noise ) const {
 
 			Pixel32& op = output(i, j);
 
-			op.r = clamp(int(p.r + (rand_noise * 255)), 0, 255);
-			op.g = clamp(int(p.g + (rand_noise * 255)), 0, 255);
-			op.b = clamp(int(p.b + (rand_noise * 255)), 0, 255);
+			u_int temp_r = p.r;
+			u_int temp_g = p.g;
+			u_int temp_b = p.b;
+
+			op.r = (unsigned char) clamp(int(temp_r + (rand_noise * 255)), 0, 255);
+			op.g = (unsigned char) clamp(int(temp_g + (rand_noise * 255)), 0, 255);
+			op.b = (unsigned char) clamp(int(temp_b + (rand_noise * 255)), 0, 255);
 			op.a = p.a;
 		}
 	}
