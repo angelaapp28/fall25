@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <random>
 #include <math.h>
+#include <cmath>
 #include <Util/exceptions.h>
 #include <bits/stdc++.h>
 
@@ -64,9 +65,14 @@ Image32 Image32::brighten( double brightness ) const {
 
 			Pixel32& out_pixel = out(i, j);
 
-			out_pixel.r = fmin(p.r * brightness, 255);
-			out_pixel.g = fmin(p.g * brightness, 255);
-			out_pixel.b = fmin(p.b * brightness, 255);
+			u_int temp_r = p.r;
+			u_int temp_g = p.g;
+			u_int temp_b = p.b;
+
+
+			out_pixel.r = (unsigned char)fmin(temp_r * brightness, 255);
+			out_pixel.g = (unsigned char)fmin(temp_g * brightness, 255);
+			out_pixel.b = (unsigned char)fmin(temp_b * brightness, 255);
 			out_pixel.a = p.a;
 
 		}
@@ -85,6 +91,7 @@ Image32 Image32::luminance( void ) const {
 			Pixel32 p = (*this)(i, j);
 
 			Pixel32& out_pixel = out(i, j);
+
 
 			float gray = 0.3 * p.r + 0.59 * p.g + 0.11 * p.b;
 			out_pixel.r = gray;
@@ -123,9 +130,13 @@ Image32 Image32::contrast( double contrast ) const {
 			
 			Pixel32& output = out(i, j);
 
-			output.r = clamp(int(((start.r - avg_lum) * contrast) + avg_lum), 0,  255);
-			output.g = clamp(int(((start.g - avg_lum) * contrast) + avg_lum), 0, 255);
-			output.b = clamp(int(((start.b - avg_lum) * contrast) + avg_lum), 0, 255);
+			u_int temp_r = start.r;
+			u_int temp_g = start.g;
+			u_int temp_b = start.b;
+
+			output.r = (unsigned char)clamp(int(((temp_r - avg_lum) * contrast) + avg_lum), 0, 255);
+			output.g = (unsigned char)clamp(int(((temp_g - avg_lum) * contrast) + avg_lum), 0, 255);
+			output.b = (unsigned char)clamp(int(((temp_b - avg_lum) * contrast) + avg_lum), 0, 255);
 			output.a = start.a;
 		}
 	} 
@@ -146,9 +157,14 @@ Image32 Image32::saturate( double saturation ) const {
 			float lumin = 0.3 * p.r + 0.59 * p.g + 0.11 * p.b;
 
 			
-			op.r = clamp(int(((p.r - lumin) * saturation) + lumin), 0, 255);
-			op.g = clamp(int(((p.g - lumin) * saturation) + lumin), 0, 255);;
-			op.b = clamp(int(((p.b - lumin) * saturation) + lumin), 0, 255);;
+			u_int temp_r = p.r;
+			u_int temp_g = p.g;
+			u_int temp_b = p.b;
+
+			
+			op.r = (unsigned char)clamp(int(((temp_r - lumin) * saturation) + lumin), 0, 255);
+			op.g = (unsigned char)clamp(int(((temp_g - lumin) * saturation) + lumin), 0, 255);;
+			op.b = (unsigned char)clamp(int(((temp_b - lumin) * saturation) + lumin), 0, 255);;
 			op.a = p.a;
 		}
 	} 
@@ -164,33 +180,95 @@ Image32 Image32::quantize( int bits ) const {
 
 	int range = 1 << bits;
 
-	int step = 256 / range - 1;
+	// handling range == 2 seperatlu
 
+	if (range == 2) {
+		for (int i = 0; i < _width; i++) {
+            for (int j = 0; j < _height; j++) {
+				Pixel32 p = (*this)(i, j);
+                Pixel32& op = outie(i, j);
+                op.r = (p.r >= 128) ? 255 : 0;
+                op.g = (p.g >= 128) ? 255 : 0;
+                op.b = (p.b >= 128) ? 255 : 0;
+                op.a = p.a;
+
+			}
+		}
+		return outie;
+	}
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+	float step = 255.0f / (range - 1);
+
+	// office hours : somehow its not creating equal sized squares in the output
 
 	for (int i = 0; i < this->_width; i++) {
 		for (int j = 0; j < this->_height; j++) {
 
 			Pixel32 p = (*this)(i, j);
-
 			Pixel32& op = outie(i, j);
 
-			op.r = (p.r / step) * step;
-			op.g = (p.g / step) * step;
-			op.b = (p.b / step) * step;
+			u_int temp_r = p.r;
+			u_int temp_g = p.g;
+			u_int temp_b = p.b;
+		
+			float quantized_r = roundf(temp_r / step) * step;
+			float quantized_g = roundf(temp_g / step) * step;
+			float quantized_b = roundf(temp_b / step) * step;
+
+			op.r = (unsigned char)(quantized_r);
+			op.g = (unsigned char)(quantized_g);
+			op.b = (unsigned char)(quantized_b);
 			op.a = p.a;
+		}
+	}
+	return outie;
+}
+
+Image32 Image32::randomDither( int bits ) const {
+	Image32 outie;
+
+	outie.setSize(this->_width, this->_height);
+
+
+
+
+	int levels = 1 << bits;
+
+	float step = 255.0f / (levels - 1);
+	for (int i = 0; i < this->_width; i++) {
+		for (int j = 0; j < this->_height; j++) {
+			Pixel32 p = (*this)(i, j);
+			Pixel32& op = outie(i, j);
+
+			float noise_r = rand(-step / 2, step / 2);
+			float noise_g = rand(-step / 2, step / 2);
+			float noise_b = rand(-step / 2, step / 2);
+
+			u_int temp_r = p.r;
+			u_int temp_g = p.g;
+			u_int temp_b = p.b;
+
+			op.r = (unsigned char) clamp(round(((temp_r + noise_r)/ step) * step ), 0.0f, 255.0f);
+			op.g = (unsigned char) clamp(round(((temp_g + noise_g)/ step) * step ), 0.0f, 255.0f);
+			op.b = (unsigned char) clamp(round(((temp_b + noise_b)/ step) * step ), 0.0f, 255.0f);
+
 		}
 	}
 
 	return outie;
-}
-
-Image32 Image32::randomDither( int bits ) const
-{
-	//////////////////////////////
-	// Do random dithering here //
-	//////////////////////////////
-	WARN( "method undefined" );
-	return Image32();
 }
 
 Image32 Image32::orderedDither2X2( int bits ) const
