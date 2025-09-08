@@ -180,36 +180,7 @@ Image32 Image32::quantize( int bits ) const {
 
 	int range = 1 << bits;
 
-	// handling range == 2 seperatlu
-
-	if (range == 2) {
-		for (int i = 0; i < _width; i++) {
-            for (int j = 0; j < _height; j++) {
-				Pixel32 p = (*this)(i, j);
-                Pixel32& op = outie(i, j);
-                op.r = (p.r >= 128) ? 255 : 0;
-                op.g = (p.g >= 128) ? 255 : 0;
-                op.b = (p.b >= 128) ? 255 : 0;
-                op.a = p.a;
-
-			}
-		}
-		return outie;
-	}
-
-
-
 	
-
-
-
-
-
-
-
-
-
-
 	float step = 255.0f / (range - 1);
 
 	// office hours : somehow its not creating equal sized squares in the output
