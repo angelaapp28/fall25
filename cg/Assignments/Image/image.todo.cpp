@@ -180,7 +180,6 @@ Image32 Image32::quantize( int bits ) const {
 
 	int range = 1 << bits;
 
-	
 	float step = 255.0f / (range - 1);
 
 	// office hours : somehow its not creating equal sized squares in the output
@@ -194,10 +193,12 @@ Image32 Image32::quantize( int bits ) const {
 			u_int temp_r = p.r;
 			u_int temp_g = p.g;
 			u_int temp_b = p.b;
+
 		
 			float quantized_r = roundf(temp_r / step) * step;
 			float quantized_g = roundf(temp_g / step) * step;
 			float quantized_b = roundf(temp_b / step) * step;
+
 
 			op.r = (unsigned char)(quantized_r);
 			op.g = (unsigned char)(quantized_g);
@@ -239,56 +240,6 @@ Image32 Image32::randomDither( int bits ) const {
 		}
 	}
 		*/
-
-
-		 if (levels == 2) { // 1-bit case
-        for (int i = 0; i < _width; i++) {
-            for (int j = 0; j < _height; j++) {
-                Pixel32 p = (*this)(i, j);
-                Pixel32& op = outie(i, j);
-                
-                // Random threshold dithering
-                int threshold = rand() % 256;
-                op.r = (p.r > threshold) ? 255 : 0;
-                op.g = (p.g > threshold) ? 255 : 0;
-                op.b = (p.b > threshold) ? 255 : 0;
-                op.a = p.a;
-            }
-        }
-        return outie;
-    }
-
-    int step = 255 / (levels - 1);
-    int noise_range = step / 2;
-
-    for (int i = 0; i < _width; i++) {
-        for (int j = 0; j < _height; j++) {
-            Pixel32 p = (*this)(i, j);
-            Pixel32& op = outie(i, j);
-
-            // Generate random noise (-noise_range to +noise_range)
-            int noise_r = (rand() % (2 * noise_range + 1)) - noise_range;
-            int noise_g = (rand() % (2 * noise_range + 1)) - noise_range;
-            int noise_b = (rand() % (2 * noise_range + 1)) - noise_range;
-
-            // Apply noise and quantize
-            int noisy_r = clamp(p.r + noise_r, 0, 255);
-            int noisy_g = clamp(p.g + noise_g, 0, 255);
-            int noisy_b = clamp(p.b + noise_b, 0, 255);
-
-            // Quantize using integer arithmetic
-            op.r = ((noisy_r + step/2) / step) * step;
-            op.g = ((noisy_g + step/2) / step) * step;
-            op.b = ((noisy_b + step/2) / step) * step;
-            op.a = p.a;
-
-            // Clamp to ensure valid range
-            if (op.r > 255) op.r = 255;
-            if (op.g > 255) op.g = 255;
-            if (op.b > 255) op.b = 255;
-        }
-    }
-
 
 	return outie;
 }
