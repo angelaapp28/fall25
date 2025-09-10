@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "image.h"
+#include <iostream>
 #include <stdlib.h>
 #include <random>
 #include <math.h>
@@ -180,7 +181,7 @@ Image32 Image32::quantize( int bits ) const {
 
 	int range = 1 << bits;
 
-	float step = 255.0f / (range - 1);
+	float step = 256.0f / (range - 1);
 
 	// office hours : somehow its not creating equal sized squares in the output
 
@@ -194,10 +195,19 @@ Image32 Image32::quantize( int bits ) const {
 			u_int temp_g = p.g;
 			u_int temp_b = p.b;
 
+			float intermediate_r = temp_r / step;
+			float intermediate_g = temp_g / step;
+			float intermediate_b = temp_b / step;
+
+			float rounded_r = floor(intermediate_r);
+			float rounded_g = floor(intermediate_g);
+			float rounded_b = floor(intermediate_b);
+
+			
 		
-			float quantized_r = roundf(temp_r / step) * step;
-			float quantized_g = roundf(temp_g / step) * step;
-			float quantized_b = roundf(temp_b / step) * step;
+			float quantized_r = rounded_r * (255.0f / (range - 1));
+			float quantized_g = rounded_g * (255.0f / (range - 1));
+			float quantized_b = rounded_b * (255.0f / (range - 1));
 
 
 			op.r = (unsigned char)(quantized_r);
