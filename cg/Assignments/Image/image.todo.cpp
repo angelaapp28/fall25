@@ -203,7 +203,6 @@ Image32 Image32::quantize( int bits ) const {
 			float rounded_g = floor(intermediate_g);
 			float rounded_b = floor(intermediate_b);
 
-			
 		
 			float quantized_r = rounded_r * (255.0f / (range - 1));
 			float quantized_g = rounded_g * (255.0f / (range - 1));
