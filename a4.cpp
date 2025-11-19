@@ -1,6 +1,7 @@
 
-#include "ekf_models.hpp"
-#include "utilities.h"
+#include "a4.hpp"
+#include "util.h"
+#include <cmath>
 
 /**
    TODO
@@ -36,7 +37,18 @@ void meas_evaluate_R( double R[6][6], const State& state ){
     for( int c=0; c<6; c++ )
       R[r][c] = 0.0;
 
-  // TODO fill in the matrix R
+
+  //GPS measurement noise
+
+  R[0][0] = 0.5;
+  R[1][1] = 0.5;
+  R[2][2] = 1.0;
+
+  //IMU measurement noise
+  R[3][3] = 0.01;
+  R[4][4] = 0.01;
+  R[5][5] = 0.02;
+
 }
 
 
@@ -57,7 +69,18 @@ State sys_evaluate_f( const State& state_in, double v, double w, double dt ){
 
   // TODO Given state_in and delta_x and delta_w increments determine the prior
   // estimate state_out
-      
+
+  double x = state_in.x[ State::POS_X ], y = state_in.x[ State::POS_Y ], z = state_in.x[ State::POS_Z ];
+  double roll = state_in.x[ State::ROT_R ], pitch = state_in.x[ State::ROT_P ], yaw = state_in.x[ State::ROT_Y ];
+  
+  state_out.x[ State::POS_X ] = x + v * dt * cos( yaw ) * cos( pitch );
+  state_out.x[ State::POS_Y ] = y + v * dt * sin( yaw ) * cos( pitch );
+  state_out.x[ State::POS_Z ] = z - v * dt * sin( pitch );
+
+  state_out.x[ State::ROT_R ] = roll;
+  state_out.x[ State::ROT_P ] = pitch;
+  state_out.x[ State::ROT_Y ] = yaw + w * dt;
+
   return state_out;
 }
 
@@ -80,6 +103,24 @@ void sys_evaluate_A( double A[6][6], const State& state, double v, double w, dou
   
   // TODO
   // Given state, v, w and dt. Compute the system Jacobian G
+
+  double yaw = state.x[ State::ROT_Y ];
+  double pitch = state.x[ State::ROT_P ];
+
+  A[0][0] = 1.0;
+  A[0][4] = -v * dt * cos( yaw ) * sin( pitch );
+  A[0][5] = -v * dt * sin( yaw ) * cos( pitch );
+
+  A[1][1] = 1.0;
+  A[1][4] = -v * dt * sin( yaw ) * sin( pitch );
+  A[1][5] = v * dt * cos( yaw ) * cos( pitch ); 
+
+  A[2][2] = 1.0;
+  A[2][4] = -v * dt * cos( pitch );
+
+  A[3][3] = 1.0;
+  A[4][4] = 1.0;
+  A[5][5] = 1.0;
   
 }
 
@@ -95,8 +136,12 @@ sensor_msgs::msg::NavSatFix meas_evaluate_gps( const State& state ){
 
   sensor_msgs::msg::NavSatFix nsf;
 
+
   // TODO
   // Given prior estimate state, determine the expected GPS measurement nsf
+  nsf.latitude = state.x[ State::POS_X ];
+  nsf.longitude = state.x[ State::POS_Y ];
+  nsf.altitude = state.x[ State::POS_Z ];
 
   return nsf;
 }
@@ -114,7 +159,12 @@ sensor_msgs::msg::RPY meas_evaluate_imu( const State& state ){
   sensor_msgs::msg::RPY rpy;
 
   // TODO
-  // Given the prior estimate state, determine the expected RPY measurement rpy  
+  // Given the prior estimate state, determine the expected RPY measurement rpy 
+  
+  rpy.roll = state.x[ State::ROT_R ];
+  rpy.pitch = state.x[ State::ROT_P ];
+  rpy.yaw = state.x[ State::ROT_Y ];
+  
   return rpy;
 }
 
@@ -130,6 +180,8 @@ void meas_evaluate_Hgps( double Hgps[3][3], const State& state ){
 
   // TODO
   // Fill the 3x3 Jacobian matrix Hgps of the GPS observations
+
+  
 }
 
 /** 
