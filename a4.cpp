@@ -21,6 +21,20 @@ void sys_evaluate_WMWt( double WMWt[6][6], const State& state, double v, double 
 
   // TODO
   // Fill in WMWt
+
+  double base_pos = 0.01;
+  double base_rot = 0.001;
+  
+  // Velocity-dependent terms
+  double vel_scale = 0.1 * fabs(v);
+  double ang_scale = 0.05 * fabs(w);
+  
+  WMWt[0][0] = (base_pos + vel_scale) * dt * dt;
+  WMWt[1][1] = (base_pos + vel_scale) * dt * dt;
+  WMWt[2][2] = (base_pos * 2.0 + vel_scale) * dt * dt; 
+  WMWt[3][3] = base_rot * dt * dt;
+  WMWt[4][4] = base_rot * dt * dt;
+  WMWt[5][5] = (base_rot * 5.0 + ang_scale) * dt * dt; 
   
 }
 
@@ -181,7 +195,10 @@ void meas_evaluate_Hgps( double Hgps[3][3], const State& state ){
   // TODO
   // Fill the 3x3 Jacobian matrix Hgps of the GPS observations
 
-  
+  Hgps[0][0] = 1.0; Hgps[0][1] = 0.0; Hgps[0][2] = 0.0;
+  Hgps[1][0] = 0.0; Hgps[1][1] = 1.0; Hgps[1][2] = 0.0;
+  Hgps[2][0] = 0.0; Hgps[2][1] = 0.0; Hgps[2][2] = 1.0;
+
 }
 
 /** 
@@ -195,5 +212,10 @@ void meas_evaluate_Himu( double Himu[3][3], const State& state ){
 
   // TODO
   // Fill the 3x3 Jacobian matrix Himu of the IMU observations
+
+  Himu[0][0] = 1.0; Himu[0][1] = 0.0; Himu[0][2] = 0.0;
+  Himu[1][0] = 0.0; Himu[1][1] = 1.0; Himu[1][2] = 0.0;
+  Himu[2][0] = 0.0; Himu[2][1] = 0.0; Himu[2][2] = 1.0;
+
 }
 
