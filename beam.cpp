@@ -1,5 +1,9 @@
 #include <cmath>
 
+double gaussian(double x, double mu, double sigma){
+    return (1.0 / (sigma * sqrt(2.0 * M_PI))) * exp( -0.5 * pow((x - mu) / sigma, 2));
+}
+
 /**
   Correct range: p_hit
   \input r: the measured range of a laser beam
@@ -9,17 +13,17 @@
   \return phit
 */
 double p_hit( double r, double rs, double z_max, double sigma_hit ){
-    double phit=0.0;
+  double phit = 0.0;
 
-    if (r < 0 || r > z_max){
-        return 0.0;
-    } else if (r == NAN || r==INFINITY){
-        return 0.0;
-    }
-
-    double denom = sqrt(2.0 * M_PI * sigma_hit * sigma_hit);
-    double num = exp( -0.5 * (r - rs) * (r - rs) / (sigma_hit * sigma_hit) );
-    return phit;
+  if (r < 0 || r > z_max || std::isnan(r) || std::isinf(r)){
+      return 0.0;
+  }
+  double g = gaussian(r, rs, sigma_hit);
+    
+  double eta = 1.0 / (erf((z_max - rs) / (sigma_hit * sqrt(2))) - erf(-rs / (sigma_hit * sqrt(2)))) * 0.5;
+    
+  phit = eta * g;
+  return phit;
 }
 
 /**
@@ -30,8 +34,14 @@ double p_hit( double r, double rs, double z_max, double sigma_hit ){
   \return p_short
 */
 double p_short( double r, double rs, double z_max, double lambda_short ){
-  // TODO
+  
   double pshort = 0.0;
+  if (r < 0 || r > z_max || std::isnan(r) || std::isinf(r)){
+      return 0.0;
+  }
+
+  double eta = 1.0 / (1.0 - exp(-lambda_short * rs));
+  pshort = eta * lambda_short * exp(-lambda_short * r);
   return pshort;
 }
 
@@ -43,8 +53,14 @@ double p_short( double r, double rs, double z_max, double lambda_short ){
   \return p_max
  */
 double p_max( double r, double rs, double z_max ){
-  // TODO
+  if (r < 0 || r > z_max || std::isnan(r) || std::isinf(r)){
+      return 0.0;
+  }
+
   double pmax = 0.0;
+  if (r - z_max < 1e-4){
+      pmax = 1.0;
+  }
   return pmax;
 }  
 
@@ -56,8 +72,12 @@ double p_max( double r, double rs, double z_max ){
   \return p_rand
 */
 double p_rand( double r, double rs, double z_max ){
-  // TODO
-  double prand=0;
+  double prand = 0;
+  if (r < 0 || r > z_max || std::isnan(r) || std::isinf(r)){
+      return 0.0;
+  }
+
+  prand = 1.0 / z_max;
   return prand;
 }
 
@@ -100,5 +120,31 @@ double beam_model( Map* map,
 		   double w_rand ){
 
   double p = 1.0;
+  double robot_x, robot_y, robot_theta = s;
+  double laser_x, laser_y, laser_theta = laser_pose;
+
+  // transform laser to world (robot * laser -- matrix multiplication)
+  double laser_world_x = robot_x + (laser_x * cos(robot_theta))  - (laser_y * sin(robot_theta));
+  double laser_world_y = robot_y + (laser_x * sin(robot_theta))  + (laser_y * cos(robot_theta));
+  double laser_world_theta = robot_theta + laser_theta;
+
+  for (size_t i = 0; i < z.size(); i++){
+    double measured_range = z[i].range;
+    double measured_bearing = z[i].bearing;
+
+    //  beam endpoint in world coordinates
+    double beam_world_bearing = laser_world_theta + measured_bearing;
+    // find expected range
+    double expected_range = map_calc_range(map, laser_world_x, laser_world_y, beam_world_bearing, z_max);
+
+    double phit = p_hit(measured_range, expected_range, z_max, sigma_hit);
+    double pshort = p_short(measured_range, expected_range, z_max, lambda_short);      double pmax = p_max(measured_range, expected_range, z_max);
+    double prand = p_rand(measured_range, expected_range, z_max);
+
+    double pz = w_hit * phit + w_short * pshort + w_max * pmax + w_rand * prand;
+
+    // update total probability
+    p += log(pz + 1e-9);
+  }
   return p;
 }
