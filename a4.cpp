@@ -25,7 +25,6 @@ void sys_evaluate_WMWt( double WMWt[6][6], const State& state, double v, double 
   double base_pos = 0.01;
   double base_rot = 0.001;
   
-  // Velocity-dependent terms
   double vel_scale = 0.1 * fabs(v);
   double ang_scale = 0.05 * fabs(w);
   
