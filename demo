@@ -81,7 +81,7 @@ ASBRContext::vertex ASBRContext::sample_nearby( const ASBRContext::vertex& q ){
 
   ASBRContext::vertex q_rand = q;
 
-  double radius = 0.01; // guessed radius; could be anything
+  double radius = 0.1; // guessed radius; could be anything
 
   for (std::size_t i = 0; i < q_rand.size(); i++) {
     double rand_offset = ((double) rand() / RAND_MAX) * (2 * radius) - radius;
@@ -100,7 +100,7 @@ bool ASBRContext::is_local_path_collision_free( const ASBRContext::vertex& q, co
     4. if any configuration collides, return false; otherwise return true
   */
 
-  int num_steps = 10; // number of interpolation steps
+  int num_steps = 20; // number of interpolation steps
 
   for (int i = 0; i <= num_steps; i++) {
     double t = (double)(i) / num_steps;
@@ -211,40 +211,54 @@ ASBRContext::path ASBRContext::est( const ASBRContext::vertex& q_init, const ASB
         parent_to.push_back(idx_near);
         weights_to.push_back(1.0);
 
+	weights_to[idx_near] += 1.0;
+
 	// trying to connect the two trees -- finding nearest in the other tree
 	index idx_other = find_nearest_configuration(tree_from, q_rand);
 	vertex q_other = tree_from[idx_other];
 
 	if (is_local_path_collision_free(q_rand, q_other)){
-	  path my_path;
+	  path raw;
 
 	  if (it % 2 == 0 ) { // q_rand added to treeB
 	    // path: start -> q_other (treeA) -> q_rand (treeB) -> goal
 	    path path_a = search_path(treeA, parentA, 0, idx_other);
-	    path path_b = search_path(treeB, parentB, 0, treeB.size() - 1);
+	    path path_b = search_path(treeB, parentB, 0, tree_to.size() - 1);
 
-	    my_path = path_a;
-	    my_path.push_back(q_rand);
+	    raw = path_a;
+	    raw.push_back(q_rand);
 
-	    for (int i = path_b.size() - 2;i >= 0; i--) {
-	      my_path.push_back(path_b[i]);
+	    for (int i = path_b.size() - 1; i >= 0; i--) {
+	      raw.push_back(path_b[i]);
 	    }
 
 	  } else { // q_rand added to treeA
-	    path path_a = search_path(treeA, parentA, 0, treeA.size() - 1);
+	    path path_a = search_path(treeA, parentA, 0, tree_to.size() - 1);
 	    path path_b = search_path(treeB, parentB, 0, idx_other);
 
-	    my_path = path_a;
+	    raw = path_a;
 
 	    for (int i = path_b.size() - 1; i >= 0; i--) {
-	      my_path.push_back(path_b[i]);
+	      raw.push_back(path_b[i]);
 	    }
   
 	  }
-	  
+	  path dense;
+	  int pps = 20; // points per segment -- add 20 points between each original point
 
-       
-          return my_path;
+	  if (!raw.empty()) {
+	    dense.push_back(raw[0]);
+
+	    for (std::size_t i = 1; i < raw.size(); i++) {
+	      for ( int j = 1; j < pps; j++) {
+		double t = (double)j / (double)pps;
+		vertex q = interpolate(raw[i-1], raw[i], t);
+		dense.push_back(q);
+	      }
+	    }
+	  }
+	  P = dense;
+          return P;
         }
         
       }
